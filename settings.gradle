@@ -1,0 +1,20 @@
+pluginManagement {
+    // Репозитории для поиска плагинов Gradle
+    repositories {
+        // Стандартный портал плагинов Gradle
+        gradlePluginPortal()
+        // Репозиторий Maven для Minecraft Forge
+        maven { url = 'https://maven.minecraftforge.net/' }
+        // Репозиторий Maven для Parchment (улучшенные маппинги)
+        maven { url = 'https://maven.parchmentmc.org' }
+    }
+}
+
+plugins {
+    // Плагин для автоматического разрешения и загрузки JDK через Foojay API
+    // Упрощает настройку правильной версии Java для проекта
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.5.0'
+}
+
+// Название корневого проекта, используется как базовое имя для сборки
+rootProject.name = 'MinecraftModByRadchuk'

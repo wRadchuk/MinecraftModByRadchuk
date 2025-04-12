@@ -1,0 +1,214 @@
+plugins {
+    id("eclipse")
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+// Minecraft 1.18+ использует Java 17, поэтому мод должен быть совместим с Java 17.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+minecraft {
+    // Настройки маппингов:
+    // Channel:   Version:
+    // official   MCVersion             Официальные имена полей/методов из файлов маппинга Mojang
+    // parchment  YYYY.MM.DD-MCVersion  Общедоступные имена параметров и документация поверх официальных маппингов
+    //
+    // Помните о лицензии Mojang при использовании маппингов 'official' или 'parchment'.
+    // Подробнее: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
+    //
+    // Parchment - неофициальный проект от ParchmentMC, отдельный от MinecraftForge
+    // Для использования их маппингов нужна дополнительная настройка: https://parchmentmc.org/docs/getting-started
+    //
+    // Использование нестандартных маппингов может привести к проблемам.
+    // Просто перезапустите задачу настройки после изменения маппингов.
+    mappings channel: mapping_channel, version: mapping_version
+
+    // Если true, все конфигурации запуска Eclipse/IntelliJ IDEA будут выполнять задачу "prepareX" перед запуском игры.
+    // В большинстве случаев это не требуется.
+    // enableEclipsePrepareRuns = true
+    // enableIdeaPrepareRuns = true
+
+    // Это свойство настраивает задачи ProcessResources для запуска в местах вывода IDE перед запуском игры.
+    // ОБЯЗАТЕЛЬНО должно быть установлено в true для работы этого шаблона.
+    // См. https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+    copyIdeResources = true
+
+    // Если true, добавляет имя папки всех объявленных конфигураций запуска в сгенерированные конфигурации IDE.
+    // Имя папки можно установить в конфигурации запуска с помощью свойства "folderName".
+    // По умолчанию имя папки - это имя проекта Gradle, содержащего конфигурацию.
+    // generateRunFolders = true
+
+    // Это свойство включает access transformers для разработки.
+    // Они будут применены к артефакту Minecraft.
+    // Файл access transformer может быть где угодно в проекте.
+    // Однако он должен быть в "META-INF/accesstransformer.cfg" в финальном jar-файле мода.
+    // Это расположение по умолчанию автоматически помещает файл в нужное место в финальном jar.
+    // Подробнее: https://docs.minecraftforge.net/en/latest/advanced/accesstransformers/
+    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    // Стандартные конфигурации запуска.
+    // Их можно настраивать, удалять или дублировать по необходимости.
+    runs {
+        // применяется ко всем конфигурациям запуска ниже
+        configureEach {
+            workingDirectory project.file('run')
+
+            // Рекомендуемые данные логирования для среды разработки
+            // Маркеры можно добавлять/удалять по необходимости, разделяя запятыми.
+            // "SCAN": Для сканирования модов.
+            // "REGISTRIES": Для событий регистрации.
+            // "REGISTRYDUMP": Для получения содержимого всех реестров.
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            // Рекомендуемый уровень логирования для консоли
+            // Можно установить различные уровни.
+            // Подробнее: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            // Список пространств имен для загрузки игровых тестов, разделенный запятыми. Пусто = все пространства имен.
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        server {
+            property 'forge.enabledGameTestNamespaces', mod_id
+            args '--nogui'
+        }
+
+        // Эта конфигурация запускает GameTestServer и выполняет все зарегистрированные игровые тесты, затем выходит.
+        // По умолчанию сервер аварийно завершит работу, если тесты не предоставлены.
+        // Система игровых тестов также включена по умолчанию для других конфигураций запуска через команду /test.
+        gameTestServer {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        data {
+            // пример переопределения рабочего каталога, установленного в configureEach выше
+            workingDirectory project.file('run-data')
+
+            // Укажите modid для генерации данных, куда выводить результат и где искать существующие ресурсы.
+            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        }
+    }
+}
+
+// Включить ресурсы, созданные генераторами данных.
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    // Укажите здесь репозитории для зависимостей
+    // ForgeGradle автоматически добавляет репозитории Forge и Maven Central
+    // Если у вас есть зависимости jar-файлов модов в ./libs, вы можете объявить их как репозиторий:
+    // См. https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
+    // flatDir {
+    //     dir 'libs'
+    // }
+}
+
+dependencies {
+    // Укажите версию Minecraft.
+    // Можно использовать любой артефакт с классификатором "userdev" и совместимым патчером.
+    // Классификатор "userdev" будет запрошен и настроен ForgeGradle.
+    // Если group id "net.minecraft" и artifact id один из ["client", "server", "joined"],
+    // то выполняется специальная обработка для настройки зависимости vanilla без внешнего репозитория.
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // Пример зависимости мода с JEI - использование fg.deobf() гарантирует, что зависимость перемаппирована на ваши маппинги разработки
+    // API JEI объявлен для использования во время компиляции, а полный артефакт JEI используется во время выполнения
+    // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}")
+    // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-forge-api:${jei_version}")
+    // runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}-forge:${jei_version}")
+
+    // Пример зависимости мода, использующей jar-файл мода из ./libs с репозиторием flat dir
+    // Это соответствует ./libs/coolmod-${mc_version}-${coolmod_version}.jar
+    // Group id игнорируется при поиске -- в данном случае это "blank"
+    // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
+
+    // Дополнительная информация:
+    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
+    // http://www.gradle.org/docs/current/userguide/dependency_management.html
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.32'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.32'
+
+}
+
+// Этот блок кода расширяет все объявленные свойства замены в указанных целевых ресурсах.
+// Отсутствующее свойство приведет к ошибке. Свойства расширяются с использованием нотации ${} Groovy.
+// Когда "copyIdeResources" включен, это также будет выполняться перед запуском игры в средах IDE.
+// См. https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+        minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
+        forge_version: forge_version, forge_version_range: forge_version_range,
+        loader_version_range: loader_version_range,
+        mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+        mod_authors: mod_authors, mod_description: mod_description,
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+// Пример того, как добавить свойства в манифест для чтения во время выполнения.
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+            'Specification-Title'     : mod_id,
+            'Specification-Vendor'    : mod_authors,
+            'Specification-Version'   : '1', // We are version 1 of ourselves
+            'Implementation-Title'    : project.name,
+            'Implementation-Version'  : project.jar.archiveVersion,
+            'Implementation-Vendor'   : mod_authors,
+            'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+
+    // Это предпочтительный метод для реобфускации вашего jar-файла
+    finalizedBy 'reobfJar'
+
+}
+
+// Однако, если вы используете мульти-проектную сборку, для разработки нужны необфусцированные jar-файлы,
+// поэтому вы можете отложить обфускацию до публикации:
+// tasks.named('publish').configure {
+//     dependsOn 'reobfJar'
+// }
+
+// Пример конфигурации для публикации с использованием плагина maven-publish
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8' // Использовать кодировку UTF-8 для компиляции Java
+}
