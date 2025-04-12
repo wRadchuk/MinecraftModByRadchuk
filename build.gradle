@@ -58,21 +58,17 @@ minecraft {
     // Стандартные конфигурации запуска.
     // Их можно настраивать, удалять или дублировать по необходимости.
     runs {
-        // применяется ко всем конфигурациям запуска ниже
+        // Применяется ко всем конфигурациям запуска ниже
         configureEach {
             workingDirectory project.file('run')
 
             // Рекомендуемые данные логирования для среды разработки
-            // Маркеры можно добавлять/удалять по необходимости, разделяя запятыми.
-            // "SCAN": Для сканирования модов.
-            // "REGISTRIES": Для событий регистрации.
-            // "REGISTRYDUMP": Для получения содержимого всех реестров.
             property 'forge.logging.markers', 'REGISTRIES'
-
-            // Рекомендуемый уровень логирования для консоли
-            // Можно установить различные уровни.
-            // Подробнее: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
             property 'forge.logging.console.level', 'debug'
+
+            // Добавляем параметры JVM для кодировки здесь, чтобы они применялись ко всем конфигурациям
+            jvmArg '-Dfile.encoding=UTF-8'
+            jvmArg '-Dconsole.encoding=UTF-8'
 
             mods {
                 "${mod_id}" {
@@ -82,8 +78,9 @@ minecraft {
         }
 
         client {
-            // Список пространств имен для загрузки игровых тестов, разделенный запятыми. Пусто = все пространства имен.
+            // Список пространств имен для загрузки игровых тестов
             property 'forge.enabledGameTestNamespaces', mod_id
+            args '-Dfile.encoding=UTF-8 -Dconsole.encoding=UTF-8'
         }
 
         server {
@@ -92,16 +89,13 @@ minecraft {
         }
 
         // Эта конфигурация запускает GameTestServer и выполняет все зарегистрированные игровые тесты, затем выходит.
-        // По умолчанию сервер аварийно завершит работу, если тесты не предоставлены.
-        // Система игровых тестов также включена по умолчанию для других конфигураций запуска через команду /test.
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
         }
 
         data {
-            // пример переопределения рабочего каталога, установленного в configureEach выше
+            // Пример переопределения рабочего каталога, установленного в configureEach выше
             workingDirectory project.file('run-data')
-
             // Укажите modid для генерации данных, куда выводить результат и где искать существующие ресурсы.
             args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
         }
